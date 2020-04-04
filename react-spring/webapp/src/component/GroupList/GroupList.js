@@ -1,26 +1,44 @@
 import React, { useState, useEffect } from 'react';
 import { ButtonGroup, Button, Container, Table } from 'reactstrap';
-import { Link } from 'react-router-dom';
+import { Link, withRouter } from 'react-router-dom';
 import AppNavbar from '../AppNavbar/AppNavbar';
+import { Cookies, withCookies } from 'react-cookie';
+import { instanceOf } from 'prop-types';
 
-function GroupList() {
+function GroupList(props) {
+
+    const propTypes = {
+        cookies: instanceOf(Cookies).isRequired
+    };
+
     const [loading, setLoading] = useState(true);
     const [groups, setGroups] = useState([]);
 
+    const { cookies } = props;
+    const csrfToken = cookies.get('XSRF-TOKEN');
+
     useEffect(() => {
-        fetch("/api/groups")
+        const url = "/api/groups";
+        const config = {
+            credentials: 'include'
+        };
+
+        fetch(url, config)
             .then(response => response.json())
             .then(data => {
                 setLoading(false);
                 setGroups(data);
-            });
+            })
+            .catch(() => props.history.push('/'));
     }, []);
 
     const remove = (id) => {
         const url = `/api/groups/${id}`;
         const config = {
             method: 'DELETE',
+            credentials: 'include',
             headers: {
+                'X-XSRF-TOKEN': csrfToken,
                 'Accept': 'application/json',
                 'Content-Type': 'application/json'
             }
@@ -43,12 +61,12 @@ function GroupList() {
                 <td style={{ whiteSpace: 'nowrap' }}>{group.name}</td>
                 <td>{address}</td>
                 <td>{group.events.map(event => {
-                    return(
-                    <div key={event.id}>{new Intl.DateTimeFormat('en-US',{
-                        year: 'numeric',
-                        month: 'long',
-                        day: '2-digit'
-                    }).format(new Date(event.date))}: {event.title}</div>
+                    return (
+                        <div key={event.id}>{new Intl.DateTimeFormat('en-US', {
+                            year: 'numeric',
+                            month: 'long',
+                            day: '2-digit'
+                        }).format(new Date(event.date))}: {event.title}</div>
                     )
                 })}</td>
                 <td>
@@ -61,9 +79,9 @@ function GroupList() {
         );
     });
 
-    return(
+    return (
         <div>
-            <AppNavbar/>
+            <AppNavbar />
             <Container fluid>
                 <div className="float-right">
                     <Button color="success" tag={Link} to="/groups/new">Add Group</Button>
@@ -87,4 +105,4 @@ function GroupList() {
     );
 }
 
-export default GroupList;
+export default withCookies(withRouter(GroupList));

@@ -2,8 +2,15 @@ import React, { useState, useEffect } from 'react';
 import { withRouter, Link } from 'react-router-dom';
 import AppNavbar from '../AppNavbar/AppNavbar';
 import { Container, Form, FormGroup, Label, Input, Button } from 'reactstrap';
+import { instanceOf } from 'prop-types';
+import { Cookies, withCookies } from 'react-cookie';
 
 const GroupEdit = (props) => {
+
+    let propTypes = {
+        cookies: instanceOf(Cookies).isRequired
+    }
+
     console.log(props);
     const emptyData = {
         name: '',
@@ -15,6 +22,8 @@ const GroupEdit = (props) => {
     };
 
     const [item, setItem] = useState(emptyData);
+    const {cookies} = props;
+    const csrfToken = cookies.get('XSRF-TOKEN');
 
     const handleChange = (event) => {
         console.log(event);
@@ -30,7 +39,9 @@ const GroupEdit = (props) => {
         const url = `/api/groups/${item.id}`;
         const config = {
             method: item.id ? 'PUT' : 'POST',
+            credentials: 'include',
             headers: {
+                'X-XSRF-TOKEN': csrfToken,
                 'Accept': 'application/json',
                 'Content-Type': 'application/json'
             },
@@ -42,12 +53,17 @@ const GroupEdit = (props) => {
 
     useEffect(() => {
         if (props.match.params.id !== 'new') {
-            fetch(`/api/groups/${props.match.params.id}`)
+            const config = {
+                credentials: 'include'
+            };
+
+            fetch(`/api/groups/${props.match.params.id}`, config)
                 .then(response => response.json())
                 .then(data => {
                     setItem(data);
                     console.log(data);
-                });
+                })
+                .catch(() => props.history.push('/'));
         }
     }, [props.match.params.id]);
 
@@ -95,4 +111,4 @@ const GroupEdit = (props) => {
     );
 };
 
-export default withRouter(GroupEdit);
+export default withCookies(withRouter(GroupEdit));
